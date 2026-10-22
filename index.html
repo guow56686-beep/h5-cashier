@@ -4,57 +4,80 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>订单收银台</title>
+  <meta name="theme-color" content="#f3f5f9">
+  <title>支付宝 UID 入口</title>
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       padding: 24px 16px;
+      min-height: 100vh;
       background: #f3f5f9;
       color: #263247;
       font-family: Arial, "Microsoft YaHei", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .container {
+      width: 100%;
       max-width: 420px;
-      margin: 24px auto;
-      padding: 28px 22px;
-      background: white;
-      border-radius: 16px;
+      padding: 30px 22px;
+      background: #fff;
+      border-radius: 18px;
       box-shadow: 0 8px 28px #17255412;
       text-align: center;
     }
 
-    h1 { font-size: 23px; margin: 0 0 10px; }
-    .muted { color: #8490a3; font-size: 13px; }
-
-    .amount {
-      font-size: 36px;
-      font-weight: 700;
-      margin: 20px 0;
-    }
-
-    .qr {
-      width: 190px;
-      height: 190px;
-      margin: 22px auto;
-      border: 2px dashed #cbd5e1;
-      border-radius: 12px;
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-      color: #64748b;
+      border-radius: 18px;
+      background: #e8f1ff;
+      color: #1769e0;
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 24px;
+    }
+
+    .muted {
+      color: #8490a3;
+      font-size: 13px;
       line-height: 1.8;
+    }
+
+    .order {
+      margin-top: 24px;
+      padding: 18px 12px;
       background: #f8fafc;
+      border-radius: 12px;
+    }
+
+    .amount {
+      margin-top: 8px;
+      color: #263247;
+      font-size: 34px;
+      font-weight: 700;
     }
 
     .notice {
+      margin-top: 18px;
       padding: 12px;
       background: #eff6ff;
-      color: #1d4ed8;
-      border-radius: 8px;
+      color: #334155;
+      border-radius: 9px;
       font-size: 13px;
       line-height: 1.8;
       text-align: left;
@@ -62,165 +85,121 @@
 
     button {
       width: 100%;
-      margin-top: 14px;
-      padding: 13px;
+      margin-top: 22px;
+      padding: 15px 12px;
       border: 0;
-      border-radius: 9px;
-      background: #2563eb;
-      color: white;
+      border-radius: 10px;
+      background: #1769e0;
+      color: #fff;
       font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
     }
 
-    button.secondary {
-      margin-top: 10px;
-      background: white;
-      color: #334155;
-      border: 1px solid #cbd5e1;
+    button:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 3px;
     }
 
     #message {
+      min-height: 24px;
       margin-top: 14px;
-      font-size: 14px;
+      color: #64748b;
+      font-size: 13px;
       line-height: 1.8;
     }
 
     footer {
-      margin-top: 24px;
-      font-size: 12px;
+      margin-top: 22px;
       color: #94a3b8;
+      font-size: 12px;
+      line-height: 1.8;
     }
   </style>
 </head>
 <body>
   <main class="container">
-    <h1>订单收银台</h1>
-    <div class="muted">本地演示页面 · 尚未连接真实支付状态</div>
+    <div class="icon" aria-hidden="true">UID</div>
 
-    <p class="muted">
-      模拟订单号：<span id="orderId">加载中...</span>
-    </p>
+    <h1>支付宝大额 UID 入口</h1>
+    <div class="muted">演示订单页面</div>
 
-    <div class="amount" id="orderAmount">加载中...</div>
+    <section class="order" aria-label="演示订单信息">
+      <div class="muted">演示订单号</div>
+      <div id="orderId">正在加载...</div>
 
-    <div class="qr">
-      二维码展示区域<br>
-      当前为演示占位图
-    </div>
+      <div class="muted" style="margin-top: 16px;">演示金额</div>
+      <div class="amount" id="orderAmount">--</div>
+    </section>
 
     <div class="notice">
-      点击下方按钮将打开外部收银台。金额和付款通道需要在收银台页面中选择。
-      当前页面不会生成真实收款码，也不会确认真实付款结果。
+      点击下方按钮将打开第三方收银台。第三方页面由服务提供方控制，
+      可能仍显示其他支付选项。请核实收款方、金额及支付服务资质后再决定是否继续。
+      本页面不生成真实收款码，也不验证真实付款结果。
     </div>
 
     <button id="checkoutBtn" type="button">
-      前往收银台
-    </button>
-
-    <button id="checkBtn" type="button">
-      模拟查询订单状态
-    </button>
-
-    <button id="retryBtn" class="secondary" type="button">
-      重新加载演示订单
+      打开第三方收银台
     </button>
 
     <div id="message" role="status" aria-live="polite">
       正在加载演示订单...
     </div>
 
-    <footer>真实付款状态必须由服务端核验</footer>
+    <footer>
+      本页面仅用于界面演示<br>
+      真实付款状态必须由服务端核验
+    </footer>
   </main>
 
   <script>
     const message = document.getElementById("message");
     const checkoutBtn = document.getElementById("checkoutBtn");
-    const checkBtn = document.getElementById("checkBtn");
-    const retryBtn = document.getElementById("retryBtn");
 
     const checkoutUrl =
       "http://api.sf2027.xyz/Pay_Charges_index_mid_10867.html";
 
-    let order = null;
-    let demoStatus = "WAITING";
-
-    function renderStatus() {
-      const statusText = {
-        WAITING: "等待付款（演示状态）",
-        PAID: "已支付（模拟结果，不代表真实到账）",
-        EXPIRED: "链接已过期（模拟结果）",
-        RISK: "交易风险提示：请停止操作并联系支付服务方核实"
-      };
-
-      message.textContent = statusText[demoStatus] || "未知订单状态";
-    }
-
     checkoutBtn.addEventListener("click", () => {
-      // 只打开对方提供的收银台，不在本页面生成真实二维码。
-      const opened = window.open(checkoutUrl, "_blank");
+      const opened = window.open(checkoutUrl, "_blank", "noopener");
 
       if (opened) {
-        message.textContent =
-          "已尝试打开外部收银台。请在新标签页查看页面。";
+        message.textContent = "已尝试打开第三方收银台，请在新标签页查看。";
       } else {
         message.textContent =
-          "浏览器可能拦截了新窗口，请允许本站打开新标签页后再试。";
+          "新窗口可能被浏览器拦截，请检查浏览器设置。";
       }
     });
 
     async function loadOrder() {
-      message.textContent = "正在读取本地演示订单...";
-
       try {
         const response = await fetch("/api/order");
 
         if (!response.ok) {
-          throw new Error("订单接口请求失败：" + response.status);
+          throw new Error("订单接口请求失败");
         }
 
         const data = await response.json();
 
         if (
           typeof data.orderId !== "string" ||
-          !Number.isFinite(Number(data.amount)) ||
-          !["WAITING", "PAID", "EXPIRED", "RISK"].includes(data.status)
+          !Number.isFinite(Number(data.amount))
         ) {
-          throw new Error("服务端返回的订单数据格式不正确");
+          throw new Error("订单数据格式不正确");
         }
 
-        order = data;
-        demoStatus = order.status;
-
-        document.getElementById("orderId").textContent = order.orderId;
+        document.getElementById("orderId").textContent = data.orderId;
         document.getElementById("orderAmount").textContent =
-          "¥ " + Number(order.amount).toFixed(2);
+          "¥ " + Number(data.amount).toFixed(2);
 
-        renderStatus();
-      } catch (error) {
         message.textContent =
-          "无法获取演示订单，请确认本地服务端正在运行。";
-        console.error("加载订单失败：", error);
+          "当前显示的是演示订单，不代表实际应付金额或付款状态。";
+      } catch (error) {
+        document.getElementById("orderId").textContent = "暂不可用";
+        document.getElementById("orderAmount").textContent = "--";
+        message.textContent = "暂时无法加载演示订单，请稍后重试。";
+        console.error(error);
       }
     }
-
-    checkBtn.addEventListener("click", () => {
-      message.textContent =
-        "当前只是本地演示，尚未连接真实订单查询接口，不能据此判断是否付款。";
-    });
-
-    retryBtn.addEventListener("click", () => {
-      loadOrder();
-    });
-
-    // 仅供本地演示，不代表真实支付结果。
-    window.demoSetStatus = function (status) {
-      const allowed = ["WAITING", "PAID", "EXPIRED", "RISK"];
-
-      if (!allowed.includes(status)) return;
-
-      demoStatus = status;
-      renderStatus();
-    };
 
     loadOrder();
   </script>
