@@ -3,7 +3,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 
-// Render 会提供 PORT 环境变量；本地运行时默认使用 3000
+// Render 提供 PORT 环境变量；本地默认使用 3000
 const PORT = Number(process.env.PORT) || 3000;
 const BASE_DIR = __dirname;
 
@@ -21,6 +21,24 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url, "http://localhost");
 
   res.setHeader("Cache-Control", "no-store");
+
+  // 检查支付配置是否填写：不显示密钥，不创建真实订单
+  if (
+    req.method === "GET" &&
+    url.pathname === "/api/pay-config-check"
+  ) {
+    const config = {
+      gatewayConfigured: Boolean(process.env.PAY_GATEWAY_URL),
+      memberIdConfigured: Boolean(process.env.PAY_MEMBER_ID),
+      apiKeyConfigured: Boolean(process.env.PAY_API_KEY)
+    };
+
+    res.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8"
+    });
+    res.end(JSON.stringify(config));
+    return;
+  }
 
   // 获取演示订单
   if (req.method === "GET" && url.pathname === "/api/order") {
@@ -106,7 +124,7 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ error: "Not found" }));
 });
 
-// 关键：绑定 0.0.0.0，并使用平台提供的端口
+// 绑定 0.0.0.0，并使用平台提供的端口
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`H5 演示服务已启动，端口：${PORT}`);
 });
