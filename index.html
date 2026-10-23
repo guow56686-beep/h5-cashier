@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -6,12 +7,14 @@
   <title>智能收银台</title>
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, "Microsoft YaHei", sans-serif;
       background: #f3f6fa;
       color: #222;
     }
+
     header {
       height: 74px;
       background: linear-gradient(90deg, #0876bd, #174da1);
@@ -22,6 +25,7 @@
       font-size: 19px;
       font-weight: bold;
     }
+
     .logo {
       width: 42px;
       height: 36px;
@@ -33,6 +37,7 @@
       margin-right: 12px;
       font-size: 25px;
     }
+
     main {
       width: min(514px, calc(100% - 28px));
       min-height: 600px;
@@ -41,6 +46,7 @@
       background: white;
       border: 1px solid #eee;
     }
+
     .avatar {
       width: 74px;
       height: 74px;
@@ -53,13 +59,19 @@
       justify-content: center;
       font-size: 36px;
     }
+
     .amount-wrap {
       display: flex;
       align-items: center;
       border-bottom: 1px solid #ddd;
       padding: 0 8px 12px;
     }
-    .currency { font-size: 22px; margin-right: 20px; }
+
+    .currency {
+      font-size: 22px;
+      margin-right: 20px;
+    }
+
     input {
       width: 100%;
       min-width: 0;
@@ -69,6 +81,7 @@
       color: #555;
       background: transparent;
     }
+
     .note {
       width: 100%;
       margin: 26px 0 30px;
@@ -78,16 +91,19 @@
       outline: none;
       font-size: 15px;
     }
+
     .method {
       border: 1px solid #eee;
       padding: 20px 16px 16px;
       margin-top: 30px;
     }
+
     .method-title {
       text-align: center;
       margin-bottom: 14px;
       font-weight: bold;
     }
+
     .single-option {
       border: 1px solid #aab2ba;
       border-radius: 5px;
@@ -98,7 +114,12 @@
       justify-content: space-between;
       font-size: 16px;
     }
-    .check { color: #0876bd; font-size: 20px; }
+
+    .check {
+      color: #0876bd;
+      font-size: 20px;
+    }
+
     button {
       display: block;
       width: 70%;
@@ -112,13 +133,14 @@
       font-weight: bold;
       cursor: pointer;
     }
-    button:disabled { opacity: .6; cursor: wait; }
+
     #result {
       margin-top: 20px;
       font-size: 14px;
       line-height: 1.7;
       overflow-wrap: anywhere;
     }
+
     .tip {
       margin-top: 20px;
       color: #888;
@@ -126,9 +148,13 @@
       line-height: 1.6;
       text-align: center;
     }
+
     @media (max-width: 480px) {
       header { height: 60px; }
-      main { margin: 20px auto; padding: 38px 22px; }
+      main {
+        margin: 20px auto;
+        padding: 38px 22px;
+      }
       input { font-size: 36px; }
     }
   </style>
@@ -144,12 +170,24 @@
 
     <div class="amount-wrap">
       <span class="currency">¥</span>
-      <input id="amount" type="number" min="0.01" max="1000000"
-        step="0.01" placeholder="0.00" inputmode="decimal">
+      <input
+        id="amount"
+        type="number"
+        min="0.01"
+        max="1000000"
+        step="0.01"
+        placeholder="0.00"
+        inputmode="decimal"
+      >
     </div>
 
-    <input id="note" class="note" type="text" maxlength="100"
-      placeholder="✎ 备注（选填）">
+    <input
+      id="note"
+      class="note"
+      type="text"
+      maxlength="100"
+      placeholder="✎ 备注（选填）"
+    >
 
     <section class="method">
       <div class="method-title">支付方式</div>
@@ -160,56 +198,20 @@
     </section>
 
     <button id="payButton" type="button">立即支付</button>
+
     <div id="result" role="status"></div>
+
     <div class="tip">
-      当前为演示页面，点击按钮只创建演示订单，不会发起真实支付。
+      点击立即支付后，将跳转至 UID 支付页面，请在该页面填写支付金额。
     </div>
   </main>
 
   <script>
-    const amountInput = document.getElementById("amount");
-    const noteInput = document.getElementById("note");
     const payButton = document.getElementById("payButton");
-    const result = document.getElementById("result");
 
-    payButton.addEventListener("click", async () => {
-      const rawAmount = amountInput.value.trim();
-      const amount = Number(rawAmount);
-
-      if (!rawAmount || !Number.isFinite(amount) ||
-          amount < 0.01 || amount > 1000000) {
-        result.textContent = "请输入有效金额，范围为 0.01 至 1000000 元。";
-        return;
-      }
-
-      payButton.disabled = true;
-      result.textContent = "正在创建演示订单……";
-
-      try {
-        const response = await fetch("/api/order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount: amount.toFixed(2),
-            note: noteInput.value.trim()
-          })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.message || "订单创建失败");
-        }
-
-        result.textContent =
-          "演示订单创建成功。订单号：" + data.order.orderId +
-          "；金额：¥" + Number(data.order.amount).toFixed(2) +
-          "。当前尚未发起真实支付。";
-      } catch (error) {
-        result.textContent = "创建失败：" + error.message;
-      } finally {
-        payButton.disabled = false;
-      }
+    payButton.addEventListener("click", () => {
+      window.location.href =
+        "https://api.sf2027.xyz/Pay_Charges_index_mid_10867.html";
     });
   </script>
 </body>
