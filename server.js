@@ -14,15 +14,15 @@ function loadEnv() {
   const content = fs.readFileSync(envPath, "utf8");
 
   for (const line of content.split(/\r?\n/)) {
-    const match = line.match(/^\s*(PAY_GATEWAY_URL|PAY_MEMBER_ID|PAY_API_KEY|PAY_CLIENT_IP)\s*=\s*(.*?)\s*$/);
+    const match = line.match(
+      /^\s*(PAY_GATEWAY_URL|PAY_MEMBER_ID|PAY_API_KEY|PAY_CLIENT_IP)\s*=\s*(.*?)\s*$/
+    );
     if (!match) continue;
 
     const key = match[1];
     const value = match[2].replace(/^["']|["']$/g, "");
 
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
+    if (!process.env[key]) process.env[key] = value;
   }
 }
 
@@ -110,8 +110,9 @@ function makeSign(params) {
 }
 
 function verifySign(params) {
-  const received = String(params.sign || params.pay_md5sign || "")
-    .toUpperCase();
+  const received = String(
+    params.sign || params.pay_md5sign || ""
+  ).toUpperCase();
 
   if (!received) return false;
 
@@ -149,11 +150,8 @@ function amountMatches(a, b) {
 }
 
 function getClientIp(req) {
-  // 优先使用由部署环境配置的客户端公网 IP。
   if (CLIENT_IP) return CLIENT_IP;
 
-  // Render 等可信反向代理通常会提供此请求头。
-  // 不要在未验证代理配置时把任意客户端提交的 IP 当作可信身份。
   const forwarded = req.headers["x-forwarded-for"];
 
   if (forwarded && process.env.RENDER) {
@@ -178,9 +176,33 @@ async function postGateway(url, params) {
   });
 
   const responseText = await response.text();
+  const contentType =
+    response.headers.get("content-type") || "unknown";
+
+  // 只提取 HTML 标题，不记录完整响应正文。
+  let responseTitle = "";
+
+  if (contentType.toLowerCase().includes("text/html")) {
+    const titleMatch = responseText.match(
+      /<title[^>]*>([\s\S]*?)<\/title>/i
+    );
+
+    if (titleMatch) {
+      responseTitle = titleMatch[1]
+        .replace(/<[^>]*>/g, "")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;|&apos;/gi, "'")
+        .slice(0, 120);
+    }
+  }
+
   console.error("Gateway response metadata:", {
     status: response.status,
-    contentType: response.headers.get("content-type") || "unknown"
+    contentType,
+    responseTitle
   });
 
   if (!response.ok) {
@@ -199,7 +221,6 @@ async function postGateway(url, params) {
 }
 
 async function queryGatewayOrder(orderId) {
-  const gateway = new URL(GATEWAY_URL);
   const queryUrl = new URL("Pay_Trade_query.html", GATEWAY_URL);
 
   const params = {
@@ -247,7 +268,6 @@ async function verifyPaidOrder(order, notify) {
     throw new Error("支付通知未表明支付成功");
   }
 
-  // 通知本身不能单独作为到账依据，再查询支付平台。
   const query = await queryGatewayOrder(order.orderId);
 
   if (!verifySign(query)) {
@@ -305,6 +325,7 @@ function getOrderPublicInfo(order) {
 
 const server = http.createServer(async (req, res) => {
   const requestStartedAt = Date.now();
+
   res.on("finish", () => {
     console.log("HTTP request completed:", {
       method: req.method,
@@ -313,6 +334,7 @@ const server = http.createServer(async (req, res) => {
       durationMs: Date.now() - requestStartedAt
     });
   });
+
   const requestUrl = new URL(
     req.url,
     `http://${req.headers.host || "localhost"}`
@@ -333,8 +355,10 @@ const server = http.createServer(async (req, res) => {
     return fs.createReadStream(indexPath).pipe(res);
   }
 
-  if (req.method === "GET" &&
-      requestUrl.pathname === "/api/pay-config-check") {
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/api/pay-config-check"
+  ) {
     return sendJson(res, 200, {
       gatewayConfigured: Boolean(GATEWAY_URL),
       memberIdConfigured: Boolean(MEMBER_ID),
@@ -343,8 +367,10 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  if (req.method === "POST" &&
-      requestUrl.pathname === "/api/order") {
+  if (
+    req.method === "POST" &&
+    requestUrl.pathname === "/api/order"
+  ) {
     console.log("Order endpoint reached:", req.method, requestUrl.pathname);
     let order = null;
 
@@ -402,12 +428,12 @@ const server = http.createServer(async (req, res) => {
       try {
         gatewayResult = await postGateway(GATEWAY_URL, params);
       } catch (error) {
-        // 请求超时或网络中断时，不能证明平台没有创建订单。
         order.status = "SUBMIT_UNKNOWN";
-        order.error = error.name === "TimeoutError" ||
+        order.error =
+          error.name === "TimeoutError" ||
           error.name === "AbortError"
-          ? "请求超时，支付平台是否收到订单尚不确定"
-          : error.message;
+            ? "请求超时，支付平台是否收到订单尚不确定"
+            : error.message;
 
         console.error("Gateway request outcome unknown:", error.message);
 
@@ -510,8 +536,10 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  if (req.method === "GET" &&
-      requestUrl.pathname === "/api/order") {
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/api/order"
+  ) {
     const orderId = requestUrl.searchParams.get("orderId");
 
     if (!orderId) {
@@ -536,8 +564,10 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  if (req.method === "POST" &&
-      requestUrl.pathname === "/api/pay-notify") {
+  if (
+    req.method === "POST" &&
+    requestUrl.pathname === "/api/pay-notify"
+  ) {
     try {
       const body = await readBody(req);
       const contentType = String(req.headers["content-type"] || "");
@@ -575,9 +605,12 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  if (req.method === "GET" &&
-      requestUrl.pathname === "/payment-result") {
-    const orderId = requestUrl.searchParams.get("orderid") ||
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/payment-result"
+  ) {
+    const orderId =
+      requestUrl.searchParams.get("orderid") ||
       requestUrl.searchParams.get("pay_orderid") || "";
 
     res.writeHead(200, {
