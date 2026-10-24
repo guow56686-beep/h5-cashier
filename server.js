@@ -304,6 +304,15 @@ function getOrderPublicInfo(order) {
 }
 
 const server = http.createServer(async (req, res) => {
+  const requestStartedAt = Date.now();
+  res.on("finish", () => {
+    console.log("HTTP request completed:", {
+      method: req.method,
+      path: (req.url || "").split("?")[0],
+      status: res.statusCode,
+      durationMs: Date.now() - requestStartedAt
+    });
+  });
   const requestUrl = new URL(
     req.url,
     `http://${req.headers.host || "localhost"}`
