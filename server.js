@@ -109,6 +109,39 @@ function makeSign(params) {
     .toUpperCase();
 }
 
+
+function makeOrderSign(params) {
+  if (!API_KEY) {
+    throw new Error("未配置 PAY_API_KEY");
+  }
+
+  const signedFields = [
+    "pay_amount",
+    "pay_applydate",
+    "pay_bankcode",
+    "pay_callbackurl",
+    "pay_memberid",
+    "pay_notifyurl",
+    "pay_orderid"
+  ];
+
+  const content = signedFields
+    .filter(key =>
+      params[key] !== undefined &&
+      params[key] !== null &&
+      String(params[key]) !== ""
+    )
+    .sort()
+    .map(key => `${key}=${params[key]}`)
+    .join("&");
+
+  return crypto
+    .createHash("md5")
+    .update(`${content}&key=${API_KEY}`, "utf8")
+    .digest("hex")
+    .toUpperCase();
+}
+
 function verifySign(params) {
   const received = String(
     params.sign || params.pay_md5sign || ""
@@ -421,7 +454,7 @@ const server = http.createServer(async (req, res) => {
         pay_ip: getClientIp(req)
       };
 
-      params.pay_md5sign = makeSign(params);
+      params.pay_md5sign = makeOrderSign(params);
 
       let gatewayResult;
 
