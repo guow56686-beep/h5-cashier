@@ -196,7 +196,7 @@ async function postGateway(url, params) {
 
 async function queryGatewayOrder(orderId) {
   const gateway = new URL(GATEWAY_URL);
-  const queryUrl = new URL("/Pay_Trade_query.html", gateway.origin);
+  const queryUrl = new URL("Pay_Trade_query.html", GATEWAY_URL);
 
   const params = {
     pay_memberid: MEMBER_ID,
