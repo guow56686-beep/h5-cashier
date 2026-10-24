@@ -4,9 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0876bd">
   <title>智能收银台</title>
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -45,6 +48,8 @@
       padding: 58px 34px;
       background: white;
       border: 1px solid #eee;
+      border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(25, 60, 100, 0.06);
     }
 
     .avatar {
@@ -72,7 +77,7 @@
       margin-right: 20px;
     }
 
-    input {
+    #amount {
       width: 100%;
       min-width: 0;
       border: none;
@@ -134,11 +139,25 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
     #result {
       margin-top: 20px;
       font-size: 14px;
       line-height: 1.7;
       overflow-wrap: anywhere;
+      text-align: center;
+    }
+
+    #result.error {
+      color: #c62828;
+    }
+
+    #result.success {
+      color: #237a45;
     }
 
     .tip {
@@ -150,12 +169,18 @@
     }
 
     @media (max-width: 480px) {
-      header { height: 60px; }
+      header {
+        height: 60px;
+      }
+
       main {
         margin: 20px auto;
         padding: 38px 22px;
       }
-      input { font-size: 36px; }
+
+      #amount {
+        font-size: 36px;
+      }
     }
   </style>
 </head>
@@ -166,52 +191,146 @@
   </header>
 
   <main>
-    <div class="avatar">♙</div>
+    <div class="avatar" aria-hidden="true">♙</div>
 
-    <div class="amount-wrap">
-      <span class="currency">¥</span>
-      <input
-        id="amount"
-        type="number"
-        min="0.01"
-        max="1000000"
-        step="0.01"
-        placeholder="0.00"
-        inputmode="decimal"
-      >
-    </div>
-
-    <input
-      id="note"
-      class="note"
-      type="text"
-      maxlength="100"
-      placeholder="✎ 备注（选填）"
-    >
-
-    <section class="method">
-      <div class="method-title">支付方式</div>
-      <div class="single-option">
-        <span>支付宝大额 UID</span>
-        <span class="check">✓</span>
+    <form id="paymentForm">
+      <div class="amount-wrap">
+        <span class="currency">¥</span>
+        <input
+          id="amount"
+          name="amount"
+          type="number"
+          min="0.01"
+          max="1000000"
+          step="0.01"
+          placeholder="0.00"
+          inputmode="decimal"
+          required
+        >
       </div>
-    </section>
 
-    <button id="payButton" type="button">立即支付</button>
+      <input
+        id="note"
+        class="note"
+        name="note"
+        type="text"
+        maxlength="100"
+        placeholder="✎ 备注（选填）"
+      >
 
-    <div id="result" role="status"></div>
+      <section class="method">
+        <div class="method-title">支付方式</div>
+        <div class="single-option">
+          <span>支付宝大额 UID</span>
+          <span class="check" aria-label="已选择">✓</span>
+        </div>
+      </section>
+
+      <button id="payButton" type="submit">立即支付</button>
+    </form>
+
+    <div id="result" role="status" aria-live="polite"></div>
 
     <div class="tip">
-      点击立即支付后，将跳转至 UID 支付页面，请在该页面填写支付金额。
+      提示：提交后将尝试创建支付订单；是否付款成功以支付网关和商户订单核验结果为准。
     </div>
   </main>
 
   <script>
+    const paymentForm = document.getElementById("paymentForm");
     const payButton = document.getElementById("payButton");
+    const amountInput = document.getElementById("amount");
+    const noteInput = document.getElementById("note");
+    const result = document.getElementById("result");
 
-    payButton.addEventListener("click", () => {
-      window.location.href =
-        "https://api.sf2027.xyz/Pay_Charges_index_mid_10867.html";
+    function showMessage(message, type) {
+      result.textContent = message;
+      result.className = type || "";
+    }
+
+    paymentForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const amount = amountInput.value.trim();
+      const note = noteInput.value.trim();
+
+      showMessage("", "");
+
+      if (!/^\d{1,7}(\.\d{1,2})?$/.test(amount)) {
+        showMessage("请输入有效金额，最多保留两位小数。", "error");
+        amountInput.focus();
+        return;
+      }
+
+      const numericAmount = Number(amount);
+
+      if (
+        !Number.isFinite(numericAmount) ||
+        numericAmount < 0.01 ||
+        numericAmount > 1000000
+      ) {
+        showMessage("金额必须在 0.01 至 1000000 元之间。", "error");
+        amountInput.focus();
+        return;
+      }
+
+      payButton.disabled = true;
+      payButton.textContent = "正在创建支付订单…";
+
+      try {
+        const response = await fetch("/api/order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            amount: amount,
+            note: note
+          })
+        });
+
+        let data;
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error("服务器返回的数据无法识别，请检查服务器日志。");
+        }
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || "创建支付订单失败。");
+        }
+
+        if (
+          typeof data.paymentUrl !== "string" ||
+          !data.paymentUrl.trim()
+        ) {
+          throw new Error(
+            "服务器没有返回支付地址，请检查支付网关配置和返回结果。"
+          );
+        }
+
+        const paymentUrl = new URL(
+          data.paymentUrl,
+          window.location.href
+        );
+
+        if (paymentUrl.protocol !== "https:") {
+          throw new Error("支付地址不是 HTTPS，已停止跳转。");
+        }
+
+        showMessage("订单已创建，正在跳转支付页面……", "success");
+
+        window.location.assign(paymentUrl.href);
+      } catch (error) {
+        showMessage(
+          error.message || "网络连接失败，请稍后重试。",
+          "error"
+        );
+
+        payButton.disabled = false;
+        payButton.textContent = "立即支付";
+      }
     });
   </script>
 </body>
