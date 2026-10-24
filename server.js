@@ -178,6 +178,10 @@ async function postGateway(url, params) {
   });
 
   const responseText = await response.text();
+  console.error("Gateway response metadata:", {
+    status: response.status,
+    contentType: response.headers.get("content-type") || "unknown"
+  });
 
   if (!response.ok) {
     throw new Error(`支付平台 HTTP ${response.status}`);
