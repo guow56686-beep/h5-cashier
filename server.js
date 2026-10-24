@@ -336,6 +336,7 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === "POST" &&
       requestUrl.pathname === "/api/order") {
+    console.log("Order endpoint reached:", req.method, requestUrl.pathname);
     let order = null;
 
     try {
